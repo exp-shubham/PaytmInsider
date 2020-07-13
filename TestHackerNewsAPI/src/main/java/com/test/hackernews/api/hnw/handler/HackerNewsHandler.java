@@ -1,10 +1,10 @@
 package com.test.hackernews.api.hnw.handler;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -60,7 +60,7 @@ public class HackerNewsHandler {
 	 */
 	public Mono<ServerResponse> getComments(ServerRequest serverRequest) {
 		String storyId = serverRequest.pathVariable(CommonConstants.STORY_ID);
-		if (StringUtils.isEmpty(storyId)) {
+		if (StringUtils.isBlank(storyId)) {
 			return badRequest;
 		}	
 		return hackerNewsService.getComments(storyId)
