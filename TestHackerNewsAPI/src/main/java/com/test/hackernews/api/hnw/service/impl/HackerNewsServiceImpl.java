@@ -94,7 +94,7 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	private Mono<List<ItemResponse>> fetchTopStories() {
 		Map<String, String> headersMap = new HashMap<>();
 		return fetchAllItemsArr(headersMap).flatMap(arr -> {
-			return ehCacheHelper.getObject("allStories").filter(stories -> { 
+			return ehCacheHelper.getObject(CommonConstants.ALLSTORIES).filter(stories -> { 
 				log.debug("arr {} and stories {}" , arr, stories );
 				return stories.equals(arr);
 			}).flatMap(stories -> extractTopStoriesFromCache())
@@ -110,7 +110,7 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	 * @return the mono
 	 */
 	private Mono<Integer[]> fetchAllItemsArr(Map<String, String> headersMap) {
-		String getStoriesUri = buildGetItemUri("topstories");
+		String getStoriesUri = buildGetItemUri(CommonConstants.TOPSTORIES_CONSTANT);
 		log.debug("Invoked fetchTopStories for uri {}", getStoriesUri);
 
 		return restAdapter.getObject(getStoriesUri, headersMap, Integer[].class);
@@ -145,7 +145,7 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	 */
 	private Mono<List<ItemResponse>> getItemList(Integer[] itemArr, Map<String, String> headersMap) {
 		log.debug("Inovked getItemList");
-		return ehCacheHelper.addObject("allStories", itemArr, 600).thenReturn(itemArr)
+		return ehCacheHelper.addObject(CommonConstants.ALLSTORIES, itemArr, 600).thenReturn(itemArr)
 				.flatMap(arr -> getItemDetails(Arrays.asList(arr), headersMap))
 				.map(itemList -> {
 					return prepareSortedItemResponse(itemList);
@@ -156,7 +156,7 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 
 	private List<ItemResponse> prepareSortedItemResponse(List<Items> itemList) {
 		List<ItemResponse> itemListResponse = itemList.stream()
-				.filter(item -> "story".equalsIgnoreCase(item.getType()))
+				.filter(item -> CommonConstants.STORY.equalsIgnoreCase(item.getType()))
 				.sorted(Comparator.comparing(Items::getTime).reversed()).limit(configHelper.getLimit())
 				.sorted(Comparator.comparing(Items::getScore).reversed()).map(item -> {
 					ItemResponse itemResponse = new ItemResponse();
@@ -193,7 +193,7 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	private Mono<List<Items>> getItemDetails(List<Integer> itemList, Map<String, String> headersMap) {
 		log.debug("Invoked getItemDetails.");
 		return Flux.fromIterable(itemList).map(itemId -> {
-			String param = new StringBuilder("item").append(CommonConstants.URI_SEPERATOR).append(itemId).toString();
+			String param = new StringBuilder(CommonConstants.ITEM).append(CommonConstants.URI_SEPERATOR).append(itemId).toString();
 			return buildGetItemUri(param);
 		}).flatMap(getItemUri -> restAdapter.getObject(getItemUri, headersMap, Items.class)).collectList();
 
@@ -227,8 +227,6 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	 */
 	@Override
 	public Mono<List<CommentResponseDto>> getComments(String storyId) {
-		String getStoriesUri =  buildGetItemUri("topstories");
-		log.debug("Invoked fetchTopStories for uri {}", getStoriesUri);
 		Map<String,String> headersMap = new HashMap<>();
 		return getItemDetails(Arrays.asList(Integer.parseInt(storyId)), headersMap)
 				.filter(CollectionUtils::isNotEmpty )
@@ -293,7 +291,7 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	 * @return the user details
 	 */
 	private Mono<Users> getUserDetails(String userId) {
-		String param = new StringBuilder("user").append(CommonConstants.URI_SEPERATOR).append(userId).toString();
+		String param = new StringBuilder(CommonConstants.USER).append(CommonConstants.URI_SEPERATOR).append(userId).toString();
 		String getUserDetailsUri = buildGetItemUri(param);
 		return restAdapter.getObject(getUserDetailsUri, new HashMap<String, String>(), Users.class);
 	}

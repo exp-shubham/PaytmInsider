@@ -65,4 +65,15 @@ public class CommonConstants {
 			.append(URI_SEPERATOR)
 			.append(START_CURLY_BRACE)
 			.append(STORY_ID).append(END_CURLY_BRACE).toString();
+	
+	/** The Constant TOPSTORIES_CONSTANT. */
+	public static final String TOPSTORIES_CONSTANT= "topstories";
+	
+	/** The Constant ALLSTORIES. */
+	public static final String ALLSTORIES= "allStories";
+	
+	public static final String ITEM= "item";
+	public static final String STORY= "story";
+	public static final String COMMENT= "comment";
+	public static final String USER= "user";
 }
