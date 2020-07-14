@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -27,8 +26,11 @@ import com.test.hackernews.api.hnw.dto.CommentResponseDto;
 import com.test.hackernews.api.hnw.helper.EhCacheHelper;
 import com.test.hackernews.api.hnw.model.ItemResponse;
 import com.test.hackernews.api.hnw.model.Items;
+import com.test.hackernews.api.hnw.model.MappingDocument;
 import com.test.hackernews.api.hnw.model.Users;
+import com.test.hackernews.api.hnw.repository.ItemsRepository;
 import com.test.hackernews.api.hnw.service.HackerNewsService;
+import com.test.hackernews.api.hnw.service.MappingDocumentService;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Exceptions;
@@ -56,8 +58,12 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	@Autowired
 	private EhCacheHelper ehCacheHelper;
 	
-	private Set<Integer> pastTopStories= new LinkedHashSet<Integer>();
-
+	@Autowired
+	private MappingDocumentService mappingService;
+	
+	@Autowired
+	private ItemsRepository itemsRepository;
+	
 	/**
 	 * Gets the top stories.
 	 *
@@ -113,7 +119,11 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 		String getStoriesUri = buildGetItemUri(CommonConstants.TOPSTORIES_CONSTANT);
 		log.debug("Invoked fetchTopStories for uri {}", getStoriesUri);
 
-		return restAdapter.getObject(getStoriesUri, headersMap, Integer[].class);
+		return restAdapter.getObject(getStoriesUri, headersMap, Integer[].class)
+				.flatMap(arr -> {
+					return mappingService.createMappingDocument(CommonConstants.PAST_STORIES, Arrays.asList(arr))
+							.thenReturn(arr);
+				});
 	}
 
 	/**
@@ -128,11 +138,7 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 			
 			ItemResponse[] itemList = objMapper.convertValue(obj, ItemResponse[].class);
 			return Arrays.stream(itemList)
-					.map(item -> {
-						pastTopStories.add(item.hashCode());
-						log.debug("item added {}", item.hashCode());
-						return item;
-					}).collect(Collectors.toList());
+					.collect(Collectors.toList());
 		}).switchIfEmpty(Mono.empty()).doOnError(Exceptions::propagate);
 	}
 
@@ -164,7 +170,6 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 					ehCacheHelper.addObject(String.valueOf(itemResponse.hashCode()),
 							itemResponse)
 					.subscribe();
-					pastTopStories.add(itemResponse.hashCode());
 					return itemResponse;
 				}).collect(Collectors.toList());
 
@@ -195,7 +200,8 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 		return Flux.fromIterable(itemList).map(itemId -> {
 			String param = new StringBuilder(CommonConstants.ITEM).append(CommonConstants.URI_SEPERATOR).append(itemId).toString();
 			return buildGetItemUri(param);
-		}).flatMap(getItemUri -> restAdapter.getObject(getItemUri, headersMap, Items.class)).collectList();
+		}).flatMap(getItemUri -> restAdapter.getObject(getItemUri, headersMap, Items.class))
+				.flatMap(item -> itemsRepository.upsert(String.valueOf(item.getId()), item, Items.class)).collectList();
 
 	}
 
@@ -205,18 +211,13 @@ public class HackerNewsServiceImpl implements HackerNewsService {
 	 * @return the past stories
 	 */
 	@Override
-	public Flux<ItemResponse> getPastStories() {
-		if(CollectionUtils.isEmpty(pastTopStories)) {
-			return Flux.empty();
-		}
-		return Flux.fromIterable(pastTopStories)
-				.map(String::valueOf)
-				.flatMap(ehCacheHelper::getObject)
-				.map(obj -> {
-					log.debug("obj {}", obj);
-					return new ObjectMapper().convertValue(obj, ItemResponse.class);
-				});
-
+	public Flux<Items> getPastStories() {
+	return	mappingService.getMappingDocumentById(CommonConstants.PAST_STORIES)
+		.filter(mappingDoc -> CollectionUtils.isNotEmpty(mappingDoc.getDocumentCollections()))
+		.map(MappingDocument::getDocumentCollections)
+		.map(LinkedHashSet::new)
+		.flatMapMany(ids -> itemsRepository.findAllById(ids, Items.class));
+		
 	}
 
 	/**

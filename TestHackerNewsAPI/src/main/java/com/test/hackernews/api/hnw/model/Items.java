@@ -31,6 +31,9 @@ public class Items implements Serializable {
 
 	/** The id. */
 	@Id
+	@JsonProperty("id")
+	@Field("id")
+	@SerializedName("id")
 	private Integer id;
 	
 	/** The deleted. */

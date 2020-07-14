@@ -53,7 +53,7 @@ public class RestAdapterImpl implements RestAdapter {
 		} catch (UnsupportedEncodingException e) {
 			return Mono.error(e);
 		}
-		log.debug("Invoking getobject for url {}",url);
+		//log.error("Invoking getobject for url {}",url);
 		return this.webClient.get().uri(url).headers(this.mapHeaders(headersMap))
 				.accept(new MediaType[] { MediaType.APPLICATION_JSON }).retrieve().bodyToMono(type)
 				.onErrorResume(err -> {

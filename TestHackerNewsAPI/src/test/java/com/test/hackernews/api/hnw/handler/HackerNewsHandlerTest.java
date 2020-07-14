@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 
 import com.test.hackernews.api.hnw.dto.CommentResponseDto;
 import com.test.hackernews.api.hnw.model.ItemResponse;
+import com.test.hackernews.api.hnw.model.Items;
 import com.test.hackernews.api.hnw.service.HackerNewsService;
 
 import reactor.core.publisher.Flux;
@@ -66,7 +67,7 @@ public class HackerNewsHandlerTest {
 	
 	@Test
 	public void testPastStories() {
-		ItemResponse  itemResponse= new ItemResponse();
+		Items  itemResponse= new Items();
 		itemResponse.setId(123);
 		Mockito.when(hackerNewsService.getPastStories())
 		.thenReturn(Flux.just(itemResponse));

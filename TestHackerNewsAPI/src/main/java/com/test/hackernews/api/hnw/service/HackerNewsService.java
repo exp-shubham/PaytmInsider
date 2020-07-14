@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.test.hackernews.api.hnw.dto.CommentResponseDto;
 import com.test.hackernews.api.hnw.model.ItemResponse;
+import com.test.hackernews.api.hnw.model.Items;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -28,7 +29,7 @@ public interface HackerNewsService {
 	 *
 	 * @return the past stories
 	 */
-	Flux<ItemResponse> getPastStories();
+	Flux<Items> getPastStories();
 	
 	/**
 	 * Gets the comments.

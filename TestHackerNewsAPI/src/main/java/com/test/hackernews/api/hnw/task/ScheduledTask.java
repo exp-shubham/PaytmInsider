@@ -1,5 +1,6 @@
 package com.test.hackernews.api.hnw.task;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,8 @@ import com.test.hackernews.api.hnw.constants.CommonConstants;
 import com.test.hackernews.api.hnw.helper.EhCacheHelper;
 import com.test.hackernews.api.hnw.model.ItemResponse;
 import com.test.hackernews.api.hnw.model.Items;
+import com.test.hackernews.api.hnw.repository.ItemsRepository;
+import com.test.hackernews.api.hnw.service.MappingDocumentService;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -40,6 +43,12 @@ public class ScheduledTask {
 	/** The eh cache helper. */
 	@Autowired
 	private EhCacheHelper ehCacheHelper;
+	
+	@Autowired
+	private MappingDocumentService mappingService;
+	
+	@Autowired
+	private ItemsRepository itemsRepository;
 	
 	/**
 	 * Update top stories in db.
@@ -64,7 +73,10 @@ public class ScheduledTask {
 		Map<String,String> headersMap = new HashMap<>();
 		return restAdapter.getObject(getStoriesUri, headersMap, Integer[].class)
 				.flatMap(arr -> {
+					
 				return	ehCacheHelper.addObject("allStories", arr)
+						.flatMap(array -> 
+						mappingService.createMappingDocument(CommonConstants.PAST_STORIES, Arrays.asList(array)))
 						.thenReturn(arr);
 				})
 				.flatMap(arr -> getItemDetails(arr, headersMap))
@@ -121,6 +133,7 @@ public class ScheduledTask {
 					.append(itemId).toString();
 			return buildGetStoriesUri(param);
 		}).flatMap(getItemUri -> restAdapter.getObject(getItemUri, headersMap, Items.class))
+		.flatMap(item -> itemsRepository.upsert(String.valueOf(item.getId()), item, Items.class))
 		.collectList()
 		.map(list -> {
 			ehCacheHelper.addObject("allItems", list)

@@ -2,7 +2,7 @@ package com.test.hackernews.api.hnw.dto;
 
 import java.util.List;
 
-import com.test.hackernews.api.hnw.model.ItemResponse;
+import com.test.hackernews.api.hnw.model.Items;
 
 import lombok.Data;
 
@@ -16,6 +16,6 @@ public class ResponseDto {
 	private int count;
 	
 	/** The items. */
-	private List<ItemResponse> items;
+	private List<Items> items;
 	
 }

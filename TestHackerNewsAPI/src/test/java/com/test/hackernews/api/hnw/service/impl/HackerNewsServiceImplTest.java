@@ -18,6 +18,8 @@ import com.test.hackernews.api.hnw.configuration.ConfigurationHelper;
 import com.test.hackernews.api.hnw.helper.EhCacheHelper;
 import com.test.hackernews.api.hnw.model.Items;
 import com.test.hackernews.api.hnw.model.Users;
+import com.test.hackernews.api.hnw.repository.ItemsRepository;
+import com.test.hackernews.api.hnw.service.MappingDocumentService;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -37,6 +39,12 @@ public class HackerNewsServiceImplTest {
 	/** The eh cache helper. */
 	@Mock
 	private EhCacheHelper ehCacheHelper;
+	
+	@Mock
+	private MappingDocumentService mappingService;
+	
+	@Mock
+	private ItemsRepository itemsRepository;
 	
 	@BeforeEach
 	public void setUp() {
