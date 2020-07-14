@@ -2,7 +2,9 @@ package com.test.hackernews.api.hnw.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,10 +19,12 @@ import com.test.hackernews.api.hnw.adapter.RestAdapter;
 import com.test.hackernews.api.hnw.configuration.ConfigurationHelper;
 import com.test.hackernews.api.hnw.helper.EhCacheHelper;
 import com.test.hackernews.api.hnw.model.Items;
+import com.test.hackernews.api.hnw.model.MappingDocument;
 import com.test.hackernews.api.hnw.model.Users;
 import com.test.hackernews.api.hnw.repository.ItemsRepository;
 import com.test.hackernews.api.hnw.service.MappingDocumentService;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -71,7 +75,10 @@ public class HackerNewsServiceImplTest {
 		item.setType("story");
 		Mockito.when(restAdapter.getObject(Mockito.anyString(), Mockito.any(), Mockito.same(Items.class)))
 		.thenReturn(Mono.just(item));
-		
+		Mockito.when(mappingService.createMappingDocument(Mockito.anyString(), Mockito.any()))
+		.thenReturn(Mono.just(new MappingDocument()));
+		Mockito.when(itemsRepository.upsert(Mockito.anyString(), Mockito.any(), Mockito.same(Items.class)))
+		.thenReturn(Mono.just(item));
 		StepVerifier.create(hackerNewsService.getTopStories())
 		.expectNextMatches(resp -> {
 			assertNotNull(resp, "Response not null");
@@ -107,7 +114,8 @@ public class HackerNewsServiceImplTest {
 		user.setCreated(123456789);
 		Mockito.when(restAdapter.getObject(Mockito.anyString(), Mockito.any(), Mockito.same(Users.class)))
 		.thenReturn(Mono.just(user));
-		
+		Mockito.when(itemsRepository.upsert(Mockito.anyString(), Mockito.any(), Mockito.same(Items.class)))
+		.thenReturn(Mono.just(item));
 		StepVerifier.create(hackerNewsService.getComments("123"))
 		.expectNextMatches(resp -> {
 			assertNotNull(resp, "Response not null");
@@ -116,4 +124,22 @@ public class HackerNewsServiceImplTest {
 		
 	}
 	
+	
+	@Test
+	public void testGetPastStories() {
+		List<Integer> collections = new ArrayList<Integer>();
+		collections.add(123);
+		MappingDocument mapD = new MappingDocument();
+		mapD.setId("124");
+		mapD.setDocumentCollections(Arrays.asList(123));
+		Mockito.when(mappingService.getMappingDocumentById(Mockito.anyString()))
+		.thenReturn(Mono.just(mapD));
+		Mockito.when(itemsRepository.findAllById(Mockito.any(), Mockito.same(Items.class)))
+		.thenReturn(Flux.just(new Items()));
+		StepVerifier.create(hackerNewsService.getPastStories())
+		.expectNextMatches(resp -> {
+			assertNotNull(resp, "Response not null");
+			return true;
+		}).expectComplete().verify();
+	}
 }

@@ -11,6 +11,9 @@ import com.test.hackernews.api.hnw.adapter.RestAdapter;
 import com.test.hackernews.api.hnw.configuration.ConfigurationHelper;
 import com.test.hackernews.api.hnw.helper.EhCacheHelper;
 import com.test.hackernews.api.hnw.model.Items;
+import com.test.hackernews.api.hnw.model.MappingDocument;
+import com.test.hackernews.api.hnw.repository.ItemsRepository;
+import com.test.hackernews.api.hnw.service.MappingDocumentService;
 
 import reactor.core.publisher.Mono;
 
@@ -29,6 +32,13 @@ public class ScheduledTaskTest {
 	@Mock
 	private RestAdapter restAdapter;
 	
+	@Mock
+	private MappingDocumentService mappingService;
+	
+	@Mock
+	private ItemsRepository itemsRepository;
+	
+	
 	@BeforeEach
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
@@ -43,16 +53,22 @@ public class ScheduledTaskTest {
 		.thenReturn(Mono.empty());
 		Mockito.when(restAdapter.getObject(Mockito.anyString(), Mockito.any(), Mockito.same(Integer[].class)))
 		.thenReturn(Mono.just(new Integer[] {123, 234}));
+		Integer [] arr = new Integer[] {123, 234};
 		Mockito.when(ehCacheHelper.addObject(Mockito.anyString(), Mockito.any(), Mockito.anyInt()))
-		.thenReturn(Mono.just(Boolean.TRUE));
+		.thenReturn(Mono.just(arr));
 		Mockito.when(ehCacheHelper.addObject(Mockito.anyString(), Mockito.any()))
-		.thenReturn(Mono.just(Boolean.TRUE));
+		.thenReturn(Mono.just(arr));
+		Mockito.when(mappingService.createMappingDocument(Mockito.anyString(), Mockito.any()))
+		.thenReturn(Mono.just(new MappingDocument()));
+		
 		Items item = new Items();
 		item.setId(123);
 		item.setScore(9);
 		item.setTime(System.currentTimeMillis());
 		item.setType("story");
 		Mockito.when(restAdapter.getObject(Mockito.anyString(), Mockito.any(), Mockito.same(Items.class)))
+		.thenReturn(Mono.just(item));
+		Mockito.when(itemsRepository.upsert(Mockito.anyString(), Mockito.any(), Mockito.same(Items.class)))
 		.thenReturn(Mono.just(item));
 		
 		scheduledTask.updateTopStoriesInDb();
